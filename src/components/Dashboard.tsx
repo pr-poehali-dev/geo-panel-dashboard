@@ -2,6 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
+import { useAuth } from '@/contexts/AuthContext';
+import RoleGuard from '@/components/RoleGuard';
 import {
   BarChart,
   Bar,
@@ -41,15 +43,17 @@ const taskDistribution = [
 ];
 
 const navigationItems = [
-  { name: 'СМР', icon: 'Hammer', active: false },
-  { name: 'Геодезия', icon: 'MapPin', active: false },
-  { name: 'Архив', icon: 'Archive', active: false },
-  { name: 'Стройконтроль', icon: 'Shield', active: false },
-  { name: 'Склад', icon: 'Package', active: false },
-  { name: 'ПТО', icon: 'FileText', active: false }
+  { name: 'СМР', icon: 'Hammer', active: false, roles: ['admin', 'supervisor'], permissions: ['manage_construction'] },
+  { name: 'Геодезия', icon: 'MapPin', active: false, roles: ['admin', 'engineer'], permissions: ['manage_geodesy'] },
+  { name: 'Архив', icon: 'Archive', active: false, roles: ['admin'], permissions: ['view_archive'] },
+  { name: 'Стройконтроль', icon: 'Shield', active: false, roles: ['admin', 'supervisor'], permissions: ['view_control'] },
+  { name: 'Склад', icon: 'Package', active: false, roles: ['admin', 'supplier'], permissions: ['view_inventory'] },
+  { name: 'ПТО', icon: 'FileText', active: false, roles: ['admin', 'engineer'], permissions: ['view_pto'] }
 ];
 
 export default function Dashboard() {
+  const { user, logout } = useAuth();
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
@@ -64,10 +68,17 @@ export default function Dashboard() {
               <Icon name="Circle" size={8} className="mr-1 fill-green-500" />
               Все системы работают
             </Badge>
-            <Button variant="outline" size="sm">
-              <Icon name="User" size={16} className="mr-2" />
-              Администратор
-            </Button>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-slate-600">
+                {user?.name} ({user?.role === 'admin' ? 'Администратор' : 
+                           user?.role === 'engineer' ? 'Инженер' :
+                           user?.role === 'supervisor' ? 'Прораб' : 'Снабженец'})
+              </span>
+              <Button variant="outline" size="sm" onClick={logout}>
+                <Icon name="LogOut" size={16} className="mr-2" />
+                Выход
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -83,14 +94,20 @@ export default function Dashboard() {
             
             <div className="space-y-1">
               {navigationItems.map((item) => (
-                <Button
+                <RoleGuard 
                   key={item.name}
-                  variant="ghost"
-                  className="w-full justify-start text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                  allowedRoles={item.roles as any}
+                  permissions={item.permissions}
+                  fallback={null}
                 >
-                  <Icon name={item.icon as any} size={16} className="mr-2" />
-                  {item.name}
-                </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                  >
+                    <Icon name={item.icon as any} size={16} className="mr-2" />
+                    {item.name}
+                  </Button>
+                </RoleGuard>
               ))}
             </div>
 
